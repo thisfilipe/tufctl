@@ -13,8 +13,19 @@ use std::process::{exit, Command};
 
 const PKEXEC: &str = "/usr/bin/pkexec";
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum HelpTopic {
+    General,
+    Status,
+    Kbd,
+    Rgb,
+    Profile,
+    Fan,
+}
+
+#[derive(Debug, PartialEq, Eq)]
 enum Action {
-    Help,
+    Help(HelpTopic),
     Version,
     Status,
     KbdGet,
@@ -59,7 +70,7 @@ fn main() {
         Ok(action) => action,
         Err(message) => {
             eprintln!("tufctl: {message}\n");
-            print_usage();
+            print_help(HelpTopic::General);
             exit(2);
         }
     };
@@ -77,8 +88,8 @@ fn main() {
 
 fn run(action: &Action) -> Result<(), String> {
     match action {
-        Action::Help => {
-            print_usage();
+        Action::Help(topic) => {
+            print_help(*topic);
             Ok(())
         }
         Action::Version => {
@@ -291,11 +302,21 @@ fn elevation_is_safe(path: &Path) -> Result<(), String> {
 fn parse_args(args: &[String]) -> Result<Action, String> {
     let command = match args.first() {
         Some(value) => value.as_str(),
-        None => return Ok(Action::Help),
+        None => return Ok(Action::Help(HelpTopic::General)),
     };
 
+    if matches!(command, "help" | "--help" | "-h") {
+        return match args.get(1) {
+            None => Ok(Action::Help(HelpTopic::General)),
+            Some(topic) => Ok(Action::Help(parse_help_topic(topic)?)),
+        };
+    }
+
+    if args.iter().any(|value| value == "--help" || value == "-h") {
+        return Ok(Action::Help(parse_help_topic(command)?));
+    }
+
     match command {
-        "help" | "-h" | "--help" => Ok(Action::Help),
         "version" | "-V" | "--version" => Ok(Action::Version),
         "status" => Ok(Action::Status),
         "kbd" => match args.get(1) {
@@ -432,38 +453,152 @@ fn parse_u8(value: &str, what: &str) -> Result<u8, String> {
         .map_err(|_| format!("invalid {what}: '{value}'"))
 }
 
-fn print_usage() {
+fn parse_help_topic(value: &str) -> Result<HelpTopic, String> {
+    match value {
+        "status" => Ok(HelpTopic::Status),
+        "kbd" => Ok(HelpTopic::Kbd),
+        "rgb" => Ok(HelpTopic::Rgb),
+        "profile" => Ok(HelpTopic::Profile),
+        "fan" => Ok(HelpTopic::Fan),
+        "help" | "version" => Ok(HelpTopic::General),
+        other => Err(format!(
+            "no help for '{other}'; run `tufctl help` for the command list"
+        )),
+    }
+}
+
+fn print_help(topic: HelpTopic) {
+    match topic {
+        HelpTopic::General => print_help_general(),
+        HelpTopic::Status => print_help_status(),
+        HelpTopic::Kbd => print_help_kbd(),
+        HelpTopic::Rgb => print_help_rgb(),
+        HelpTopic::Profile => print_help_profile(),
+        HelpTopic::Fan => print_help_fan(),
+    }
+}
+
+fn print_help_general() {
     println!(
-        r#"tufctl - ASUS TUF/ROG hardware control through the Linux kernel
+        r#"tufctl {} - ASUS TUF/ROG hardware control through the Linux kernel
 
-USAGE:
-  tufctl status                              show current state
-  tufctl kbd [0..N]                          keyboard backlight level
-  tufctl rgb <mode> [r g b] [--speed 0|1|2] [--save]
-                                             keyboard color/effect
-  tufctl profile [quiet|balanced|performance]
-                                             platform thermal profile
-  tufctl fan show                            current fan curves
-  tufctl fan auto <cpu|gpu>                  return fan to firmware control
-  tufctl fan reset <cpu|gpu>                 restore factory curve
-  tufctl fan set <cpu|gpu> <t:p,...> --yes   apply a custom curve (8 points)
-  tufctl version                             print version
+USAGE
+  tufctl <COMMAND> [ARGUMENTS]
+  tufctl help [COMMAND]
 
-MODES:
+COMMANDS
+  status              profile, backlight, RGB availability, fans and curves
+  kbd [LEVEL]         read or set the keyboard backlight
+  rgb <MODE> [R G B]  keyboard color or effect
+  profile [NAME]      read or set the platform thermal profile
+  fan show            print both fan curves
+  fan auto <FAN>      hand a fan back to firmware control
+  fan reset <FAN>     restore the factory curve
+  fan set ...         apply a custom 8-point curve (requires --yes)
+  version             print version
+
+FAN
+  cpu (or 1) and gpu (or 2); points are temperature:pwm pairs
+
+EXIT CODES
+  0 success   1 runtime error   2 usage error
+
+Run `tufctl help <COMMAND>` or `tufctl <COMMAND> --help` for details."#,
+        env!("CARGO_PKG_VERSION")
+    );
+}
+
+fn print_help_status() {
+    println!(
+        r#"tufctl status - current state
+
+USAGE
+  tufctl status
+
+PRINTS
+  Model, platform profile and available choices, keyboard backlight and RGB
+  availability, fan speeds and whether each fan uses a custom curve.
+
+Requires an ASUS laptop exposing the asus-wmi kernel interfaces."#
+    );
+}
+
+fn print_help_kbd() {
+    println!(
+        r#"tufctl kbd - keyboard backlight
+
+USAGE
+  tufctl kbd            print the current level and the maximum
+  tufctl kbd <LEVEL>    set the backlight (0..max_brightness)
+
+NOTES
+  The range comes from the kernel, usually 0..3; level 0 turns the
+  backlight off on most models. Writes are elevated through pkexec."#
+    );
+}
+
+fn print_help_rgb() {
+    println!(
+        r#"tufctl rgb - keyboard color and effects
+
+USAGE
+  tufctl rgb <MODE> [R G B] [--speed 0|1|2] [--save]
+
+MODES
   static, breathe, rainbow-cycle, rainbow-wave, star, rain, highlight,
-  laser, ripple, pulse, comet  (or numeric 0..=11)
+  laser, ripple, pulse, comet, or a numeric id 0..11.
 
-EXAMPLES:
-  tufctl rgb static 0 255 255 --save         static cyan, stored in firmware
-  tufctl rgb rainbow-wave                    temporary rainbow effect
-  tufctl profile quiet                       quieter fans under light load
+OPTIONS
+  R G B       red green blue, 0..255 each; defaults to 255 255 255
+  --speed N   0 = slow, 1 = medium (default), 2 = fast
+  --save      store the effect in firmware; without it the change is temporary
+
+EXAMPLES
+  tufctl rgb static 0 255 255 --save
+  tufctl rgb rainbow-wave --speed 0
+
+Some effects generate their own colors and ignore R G B; which effects a
+model renders is decided by its firmware."#
+    );
+}
+
+fn print_help_profile() {
+    println!(
+        r#"tufctl profile - platform thermal profile
+
+USAGE
+  tufctl profile          print the active profile and the available ones
+  tufctl profile <NAME>   set quiet, balanced or performance
+
+NOTES
+  The choices are read from the kernel, so they may differ on some models.
+  Another power daemon on your system may override the setting."#
+    );
+}
+
+fn print_help_fan() {
+    println!(
+        r#"tufctl fan - fan curves
+
+USAGE
+  tufctl fan show
+  tufctl fan auto <FAN>
+  tufctl fan reset <FAN>
+  tufctl fan set <FAN> <T1:P1,...,T8:P8> --yes
+
+FAN
+  cpu (or 1) and gpu (or 2)
+
+POINTS
+  Exactly 8 temperature:pwm pairs. Temperatures in Celsius, strictly
+  increasing and within 0..120; pwm within 0..255.
+
+EXAMPLE
   tufctl fan set cpu 45:30,50:40,55:50,60:60,65:80,70:110,80:160,90:220 --yes
 
-NOTES:
-  - writes are elevated through pkexec and a polkit rule scoped to this binary
-  - rgb without --save is temporary; the firmware keeps its previous setting
-  - fan curves use Celsius and pwm 0..255, with strictly increasing temperatures
-"#
+SAFETY
+  A custom curve replaces the firmware behaviour. `fan auto` returns to
+  firmware control and `fan reset` restores the factory curve."#
     );
 }
 
@@ -538,5 +673,31 @@ mod tests {
     #[test]
     fn rejects_out_of_range_speed() {
         assert!(parse_rgb(&args(&["static", "1", "2", "3", "--speed", "5"])).is_err());
+    }
+
+    #[test]
+    fn routes_help_to_topics() {
+        assert_eq!(parse_args(&[]).unwrap(), Action::Help(HelpTopic::General));
+        assert_eq!(
+            parse_args(&args(&["--help"])).unwrap(),
+            Action::Help(HelpTopic::General)
+        );
+        assert_eq!(
+            parse_args(&args(&["help", "fan"])).unwrap(),
+            Action::Help(HelpTopic::Fan)
+        );
+        assert_eq!(
+            parse_args(&args(&["rgb", "--help"])).unwrap(),
+            Action::Help(HelpTopic::Rgb)
+        );
+        assert_eq!(
+            parse_args(&args(&["fan", "-h"])).unwrap(),
+            Action::Help(HelpTopic::Fan)
+        );
+    }
+
+    #[test]
+    fn rejects_help_for_unknown_command() {
+        assert!(parse_args(&args(&["help", "nope"])).is_err());
     }
 }
