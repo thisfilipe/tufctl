@@ -1,0 +1,67 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl
+
+      - name: install musl toolchain
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: build static binary
+        run: cargo build --release --locked --target x86_64-unknown-linux-musl
+
+      - name: verify it is static
+        run: |
+          file target/x86_64-unknown-linux-musl/release/tufctl
+          if readelf -d target/x86_64-unknown-linux-musl/release/tufctl | grep -q NEEDED; then
+            echo "error: binary requires shared libraries" >&2
+            exit 1
+          fi
+
+      - name: package
+        run: |
+          set -eu
+          version="${GITHUB_REF_NAME#v}"
+          name="tufctl-${version}-x86_64-unknown-linux-musl"
+
+          mkdir -p dist
+          install -m755 target/x86_64-unknown-linux-musl/release/tufctl dist/tufctl
+          sed "s|@BINDIR@|/usr/local/bin|g" \
+            packaging/org.asus.tufctl.policy.in > dist/org.asus.tufctl.policy
+          cp README.md LICENSE dist/
+
+          tar -C dist -czf "${name}.tar.gz" tufctl org.asus.tufctl.policy README.md LICENSE
+          sha256sum "${name}.tar.gz" > "${name}.tar.gz.sha256"
+
+      - name: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          version="${GITHUB_REF_NAME#v}"
+
+          awk -v ver="$version" '
+            $0 ~ "^## \\[" ver "\\]" { flag = 1; next }
+            flag && /^## \[/ { exit }
+            flag { print }
+          ' CHANGELOG.md > release-notes.md
+          test -s release-notes.md
+
+          gh release create "$GITHUB_REF_NAME" \
+            --title "tufctl ${version}" \
+            --notes-file release-notes.md \
+            "tufctl-${version}-x86_64-unknown-linux-musl.tar.gz" \
+            "tufctl-${version}-x86_64-unknown-linux-musl.tar.gz.sha256"

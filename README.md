@@ -1,6 +1,7 @@
 # tufctl
 
 [![ci](https://github.com/thisfilipe/tufctl/actions/workflows/ci.yml/badge.svg)](https://github.com/thisfilipe/tufctl/actions/workflows/ci.yml)
+[![release](https://img.shields.io/github/v/release/thisfilipe/tufctl)](https://github.com/thisfilipe/tufctl/releases)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A small, dependency-free command line tool to control **ASUS TUF/ROG laptops on Linux**
@@ -63,6 +64,24 @@ curve is a typed command with range checking, instead of `echo` into sysfs as ro
 
 ## Install
 
+### From a release
+
+Every tag publishes a static `x86_64-unknown-linux-musl` binary with a checksum, so no
+Rust toolchain is needed:
+
+```console
+$ version=0.1.0
+$ base=https://github.com/thisfilipe/tufctl/releases/download/v$version
+$ curl -LO $base/tufctl-$version-x86_64-unknown-linux-musl.tar.gz
+$ curl -LO $base/tufctl-$version-x86_64-unknown-linux-musl.tar.gz.sha256
+$ sha256sum -c tufctl-$version-x86_64-unknown-linux-musl.tar.gz.sha256
+$ tar xzf tufctl-$version-x86_64-unknown-linux-musl.tar.gz
+$ sudo install -Dm755 tufctl /usr/local/bin/tufctl
+$ sudo install -Dm644 org.asus.tufctl.policy /usr/share/polkit-1/actions/
+```
+
+### From source
+
 ```console
 $ git clone https://github.com/thisfilipe/tufctl.git
 $ cd tufctl
@@ -102,6 +121,7 @@ $ tufctl fan show                       # current curves and percentages
 $ tufctl fan set cpu 45:30,50:40,55:50,60:60,65:80,70:110,80:160,90:220 --yes
 $ tufctl fan auto cpu                   # back to firmware control
 $ tufctl fan reset cpu                  # restore the factory curve
+$ tufctl help fan                       # help for a single command
 ```
 
 Fan output:
