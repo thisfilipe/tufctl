@@ -1,6 +1,6 @@
 # tufctl
 
-[![ci](https://github.com/OWNER/tufctl/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/tufctl/actions/workflows/ci.yml)
+[![ci](https://github.com/thisfilipe/tufctl/actions/workflows/ci.yml/badge.svg)](https://github.com/thisfilipe/tufctl/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A small, dependency-free command line tool to control **ASUS TUF/ROG laptops on Linux**
@@ -64,7 +64,7 @@ curve is a typed command with range checking, instead of `echo` into sysfs as ro
 ## Install
 
 ```console
-$ git clone https://github.com/OWNER/tufctl.git
+$ git clone https://github.com/thisfilipe/tufctl.git
 $ cd tufctl
 $ ./install.sh
 ```
@@ -177,14 +177,23 @@ $ sudo rm /usr/local/bin/tufctl /usr/share/polkit-1/actions/org.asus.tufctl.poli
 
 ## Contributing
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the design rules, the hardware testing recipe
+and the pull request checklist. In short:
+
 ```console
 $ cargo fmt --check
 $ cargo clippy --all-targets -- -D warnings
 $ cargo test
 ```
 
-Keep the tool dependency-free and procedural; one file per concern. Bug reports are most
-useful with the model, kernel version and the relevant sysfs contents.
+`main` is protected: changes land through pull requests with green CI and linear history.
+
+Device reports are the most valuable contribution — they build the compatibility table
+above. Bug reports are most useful with the model, kernel version and the relevant sysfs
+contents. Do not paste serial numbers.
+
+Security issues should follow [SECURITY.md](SECURITY.md) instead of a public issue.
+Participation is covered by the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License
 

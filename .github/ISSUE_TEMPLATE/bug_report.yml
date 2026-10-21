@@ -1,0 +1,75 @@
+name: Bug report
+description: Something behaves differently from what the documentation says
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please do **not** paste serial numbers, UUIDs or full
+        `dmidecode` dumps — `product_name` and sysfs listings are enough.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Include the exact command and the output.
+      render: console
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. tufctl ...
+        2. ...
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      description: Output of `cat /sys/class/dmi/id/product_name`
+      placeholder: ASUSTeK COMPUTER INC. ...
+    validations:
+      required: true
+  - type: input
+    id: kernel
+    attributes:
+      label: Kernel and distribution
+      description: Output of `uname -r` plus your distro and version
+      placeholder: 7.2.6-76070206-generic / Pop!_OS 24.04
+    validations:
+      required: true
+  - type: dropdown
+    id: feature
+    attributes:
+      label: Affected feature
+      multiple: true
+      options:
+        - backlight
+        - rgb
+        - platform profile
+        - fan curves
+        - fan speeds
+        - installation / polkit
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: status
+    attributes:
+      label: tufctl status
+      render: console
+  - type: textarea
+    id: logs
+    attributes:
+      label: Kernel messages
+      description: Output of `dmesg | grep -i -E "asus|wmi"`
+      render: console

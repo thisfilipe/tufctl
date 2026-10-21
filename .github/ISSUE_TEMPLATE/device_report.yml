@@ -1,0 +1,63 @@
+name: Device report
+description: Report whether your ASUS laptop works with tufctl
+title: "[device] "
+labels: ["device-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Device reports build the compatibility table in the README. They only need what
+        the kernel exposes — no serial numbers, please.
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      description: Output of `cat /sys/class/dmi/id/product_name`
+      placeholder: ASUS TUF Gaming A15 FA506NCR_FA506NCR
+    validations:
+      required: true
+  - type: input
+    id: kernel
+    attributes:
+      label: Kernel
+      description: Output of `uname -r`
+    validations:
+      required: true
+  - type: input
+    id: distro
+    attributes:
+      label: Distribution
+      placeholder: Pop!_OS 24.04, Fedora 42, Arch, ...
+    validations:
+      required: true
+  - type: checkboxes
+    id: works
+    attributes:
+      label: What works
+      options:
+        - label: Keyboard backlight brightness
+        - label: Keyboard RGB (color/effects)
+        - label: Platform profiles (quiet/balanced/performance)
+        - label: Fan speeds (RPM readable)
+        - label: Custom fan curves
+        - label: Passwordless operation through the polkit rule
+  - type: textarea
+    id: status
+    attributes:
+      label: tufctl status
+      render: console
+    validations:
+      required: true
+  - type: textarea
+    id: sysfs
+    attributes:
+      label: Relevant sysfs entries
+      description: |
+        `ls /sys/class/hwmon/*/name`
+        `ls /sys/class/leds/asus::kbd_backlight/`
+      render: console
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything unusual
+      description: Missing attributes, quirks, workarounds, models that needed extra parameters.

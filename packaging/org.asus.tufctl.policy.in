@@ -5,7 +5,7 @@
 <policyconfig>
 
   <vendor>tufctl</vendor>
-  <vendor_url>https://github.com/OWNER/tufctl</vendor_url>
+  <vendor_url>https://github.com/thisfilipe/tufctl</vendor_url>
 
   <action id="org.asus.tufctl">
     <description>Control ASUS TUF/ROG hardware</description>

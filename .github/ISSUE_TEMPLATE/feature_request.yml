@@ -1,0 +1,36 @@
+name: Feature request
+description: Suggest an interface the kernel already exposes but tufctl does not cover
+title: "[feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        `tufctl` deliberately stays small. The best proposals wrap an interface that the
+        kernel already provides instead of adding a new background service.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What can you not do today, and why does it matter?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed interface
+      description: The command you would type and the output you would expect.
+      render: console
+    validations:
+      required: true
+  - type: input
+    id: sysfs
+    attributes:
+      label: Kernel interface
+      description: The sysfs/hwmon path that would back this feature, if you know it.
+      placeholder: /sys/firmware/acpi/...
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other tools, workarounds, or why they are not enough.
