@@ -1,0 +1,15 @@
+[package]
+name = "tufctl"
+version = "0.1.0"
+edition = "2021"
+description = "Controle de brilho/RGB do teclado, perfil de energia e curvas de ventoinha em notebooks ASUS TUF/ROG via sysfs"
+license = "MIT"
+
+[[bin]]
+name = "tufctl"
+path = "src/main.rs"
+
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true
